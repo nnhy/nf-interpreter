@@ -5,6 +5,8 @@
 #ifndef _NANOHAL_WINDOWS_STORAGE_H_
 #define _NANOHAL_WINDOWS_STORAGE_H_ 1
 
+#include <Target_Windows_Storage.h>
+
 // FatFs define for size of file name members
 // ANSI/OEM at DBCS
 #define FF_LFN_BUF  255
@@ -14,6 +16,10 @@
 #define SDCARD_DRIVE_PATH       SDCARD_DRIVE_LETTER"\\"
 #define USB_MSD_DRIVE_LETTER    "E:"
 #define USB_MSD_DRIVE_PATH      USB_MSD_DRIVE_LETTER"\\"
+
+// Storage events sub-categories
+#define EVENT_STORAGE_DEVICE_INSERTION      0x01
+#define EVENT_STORAGE_DEVICE_REMOVAL        0x02
 
 // enum with the supported drives in Windows.Storage
 typedef enum Storage_Drives
