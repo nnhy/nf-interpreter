@@ -19,6 +19,6 @@ steps:
       
       echo todo - add macros e.g. -DUVISOR_PRESENT
       echo todo - make target configurable
-      mbed compile -m DISCO_F769NI -t GCC_ARM -vv --source=. --source=$(Build.SourcesDirectory)\src --build $(Build.SourcesDirectory)\build --app-config=.\mbed_app.json
+      mbed compile -m DISCO_F769NI -t GCC_ARM -vv --source=. --source=$(Build.SourcesDirectory)\src --build $(Build.SourcesDirectory)\build --app-config=.\mbed_app.json --profile=.\profiles\test.json
 
     displayName: 'build target using mbed-cli'
