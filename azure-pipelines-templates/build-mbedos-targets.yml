@@ -1,0 +1,24 @@
+# Copyright (c) 2019 The nanoFramework project contributors
+# See LICENSE file in the project root for full license information.
+
+parameters:
+  buildDirectory: '$(Build.SourcesDirectory)\build'
+  mbedDirectory: '$(Build.SourcesDirectory)\targets\mbedOS'
+  nfSrcDirectory: '$(Build.SourcesDirectory)\src'
+
+steps:
+  - script: |
+      mkdir $(Build.SourcesDirectory)\build
+
+      :: TODO - currently having problems adding multiple sources, so for the moment we will hack it
+      :: by just copying the source required into its own folder
+
+      cd $(Build.SourcesDirectory)\targets\mbedOS      
+      mbed new .
+      mbed config --list
+      
+      echo todo - add macros e.g. -DUVISOR_PRESENT
+      echo todo - make target configurable
+      mbed compile -m DISCO_F769NI -t GCC_ARM -vv --source=. --source=$(Build.SourcesDirectory)\src --build $(Build.SourcesDirectory)\build --app-config=.\mbed_app.json
+
+    displayName: 'build target using mbed-cli'

@@ -1,0 +1,16 @@
+# Copyright (c) 2019 The nanoFramework project contributors
+# See LICENSE file in the project root for full license information.
+
+steps:
+
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.7'
+    displayName: 'Use Python 3.7'
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install mbed-cli
+      mbed config -G GCC_ARM_PATH "$(GNU_GCC_TOOLCHAIN_PATH)\bin"
+    displayName: 'Install mbed-cli'
