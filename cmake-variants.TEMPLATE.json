@@ -7,11 +7,6 @@
           "long": "Emit debug information without performing optimizations",
           "buildType": "Debug"
         },
-        "release": {
-          "short": "Release",
-          "long": "Enable optimizations, omit debug info",
-          "buildType": "Release"
-        },
         "minsize": {
           "short": "MinSizeRel",
           "long": "Optimize for smallest binary size",
@@ -36,15 +31,17 @@
           "TOOL_HEX2DFU_PREFIX" : "<path-to-hex2dfu-utility-mind-the-forward-slash>",
           "ESP32_IDF_PATH" : "<path-to-esp32-idf-mind-the-forward-slash>/esp-idf",
           "ESP32_LIBS_PATH" : "<path-to-esp32-libraries-mind-the-forward-slash>/libs",
-          "TARGET_SERIES" : "<series-name-of-the-target-chip-----STM32F0xx-STM32F4xx-STM32F7xx-ESP32>",
+          "TARGET_SERIES" : "<series-name-of-the-target-chip-----STM32F0xx-STM32F4xx-STM32F7xx-ESP32-CC32xx>",
           "USE_RNG" : "<ON-default-for-using-hardware-true-random-generator-unit>",
           "DP_FLOATINGPOINT" : "<OFF-default-ON-for-adding-support-for-double-precision-floating-point>",
           "SUPPORT_ANY_BASE_CONVERSION" : "<OFF-default-ON-for-adding-support-for-conversion-strings-to-values-on-any-base>",
-          "RTOS" : "<one-of-valid-rtos-options----CHIBIOS-FREERTOS_ESP32>",
+          "RTOS" : "<one-of-valid-rtos-options----CHIBIOS-FREERTOS_ESP32-TI_SIMPLELINK>",
           "CHIBIOS_SOURCE" : "<path-to-chibios-source-mind-the-forward-slash>",
           "CHIBIOS_CONTRIB_REQUIRED" : "OFF-default-ON-to-include_ChibiOS-Contrib-repository-in-the-build",
           "CHIBIOS_CONTRIB_SOURCE" : "<path-to-local-ChibiOS-contrib-source-mind-the-forward-slash>",
           "CHIBIOS_BOARD" : "<valid-chibios-board-name-from-boards-collection>",
+          "TI_BOARD" : "<valid-TI-board-name-from-boards-collection>",
+          "TI_SL_CC32xx_SDK_SOURCE" : "<path-to-local-TI-SimpleLink-CC32xx-SDK-source-mind-the-forward-slash>",
           "SWO_OUTPUT" : "OFF-default-ON-to-enable-ARM-CortexM-Single-Wire-Output",
           "NF_BUILD_RTM" : "OFF-default-ON-to-enable-RTM-build",
           "NF_WP_TRACE_ERRORS" : "OFF-default-ON-to-enable-trace-error-messages-wire-protocol",
@@ -58,6 +55,7 @@
           "NF_FEATURE_USE_APPDOMAINS" : "OFF-default-ON-to-enable-support-for-Application-Domains",
           "NF_FEATURE_WATCHDOG" : "ON-to-enable-hardware-watchdog-ON-is-default",
           "NF_FEATURE_HAS_CONFIG_BLOCK" : "OFF-default-ON-to-enable-configuration-block-storage",
+          "NF_FEATURE_HAS_SDCARD" : "OFF-default-ON-to-enable-support-for-SDCard-storage-device",
           "NF_FEATURE_HAS_USB_MSD" : "OFF-default-ON-to-enable-support-for-USB-Mass-storage-device",
           "NF_PLATFORM_NO_CLR_TRACE" : "OFF-default-ON-to-disable-all-trace-on-CLR",
           "NF_CLR_NO_IL_INLINE" : "OFF-default-ON-to-disable-CLR-IL-inlining",
@@ -79,7 +77,6 @@
           "API_Windows.Devices.SerialCommunication" : "OFF-default-ON-to-add-this-API",
           "API_Windows.Devices.Spi" : "OFF-default-ON-to-add-this-API",
           "API_Windows.Networking.Sockets" : "OFF-default-ON-to-add-this-API",
-          "API_Windows.Storage" : "OFF-default-ON-to-add-this-API",
           "API_Hardware.Esp32" : "OFF-default-ON-to-add-this-API",
           "API_Hardware.Stm32" : "OFF-default-ON-to-add-this-API"
         }

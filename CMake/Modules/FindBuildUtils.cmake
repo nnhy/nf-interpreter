@@ -22,20 +22,20 @@ endfunction()
 
 function(NF_GENERATE_BUILD_OUTPUT_FILES TARGET)
 
-    if(${VISUAL_STUDIO})
-        # CMAKE command add_custom_Command 'POST_BUILD' currently fails,  "CMD.EXE" not recognised
-        # Use the CopyBuildOutput.cmd in the VisualStudioDevelopment folder to manually perform the same function
-        return()
-    endif()
+#    if(${VISUAL_STUDIO})
+#        # CMAKE command add_custom_Command 'POST_BUILD' currently fails,  "CMD.EXE" not recognised
+#        # Use the CopyBuildOutput.cmd in the VisualStudioDevelopment folder to manually perform the same function
+#        return()
+#    endif()
 
     # need to remove the .elf suffix from target name
     string(FIND ${TARGET} "." TARGET_EXTENSION_DOT_INDEX)
     string(SUBSTRING ${TARGET} 0 ${TARGET_EXTENSION_DOT_INDEX} TARGET_SHORT)
 
-    set(TARGET_HEX_FILE ${PROJECT_SOURCE_DIR}/build/${TARGET_SHORT}.hex)
-    set(TARGET_S19_FILE ${PROJECT_SOURCE_DIR}/build/${TARGET_SHORT}.s19)
-    set(TARGET_BIN_FILE ${PROJECT_SOURCE_DIR}/build/${TARGET_SHORT}.bin)
-    set(TARGET_DUMP_FILE ${PROJECT_SOURCE_DIR}/build/${TARGET_SHORT}.lst)
+    set(TARGET_HEX_FILE ${PROJECT_BINARY_DIR}/${TARGET_SHORT}.hex)
+    set(TARGET_S19_FILE ${PROJECT_BINARY_DIR}/${TARGET_SHORT}.s19)
+    set(TARGET_BIN_FILE ${PROJECT_BINARY_DIR}/${TARGET_SHORT}.bin)
+    set(TARGET_DUMP_FILE ${PROJECT_BINARY_DIR}/${TARGET_SHORT}.lst)
 
     if(CMAKE_BUILD_TYPE EQUAL "Release" OR CMAKE_BUILD_TYPE EQUAL "MinSizeRel")
 

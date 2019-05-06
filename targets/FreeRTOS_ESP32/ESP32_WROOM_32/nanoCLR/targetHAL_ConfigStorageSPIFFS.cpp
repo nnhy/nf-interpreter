@@ -10,8 +10,9 @@
 #include "targetHAL_ConfigStorage.h"
 
 // SPIFFS config
-#define SPIFFS_Base_Path        "/config"
-#define SPIFFS_Base_Config_Name "config_"
+#define SPIFFS_Base_Path        "/I"
+//#define SPIFFS_Base_Path        "/config"
+#define SPIFFS_Base_Config_Name "con_"
 #define SPIFFS_Partition_Label  "config"
 #define SPIFFS_MaxFileNameLen   20
 
