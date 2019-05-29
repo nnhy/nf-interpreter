@@ -67,15 +67,15 @@ struct Library_win_storage_native_Windows_Storage_FileIO
 
 struct Library_win_storage_native_Windows_Storage_StorageFile
 {
-	static const int FIELD___dateCreated = 1;
-	static const int FIELD___name = 2;
-	static const int FIELD___path = 3;
+    static const int FIELD___dateCreated = 1;
+    static const int FIELD___name = 2;
+    static const int FIELD___path = 3;
 
-	NANOCLR_NATIVE_DECLARE(DeleteFileNative___VOID);
-	NANOCLR_NATIVE_DECLARE(RenameFileNative___VOID__STRING);
-	NANOCLR_NATIVE_DECLARE(CheckFileNative___STATIC__VOID__STRING);
+    NANOCLR_NATIVE_DECLARE(DeleteFileNative___VOID);
+    NANOCLR_NATIVE_DECLARE(RenameFileNative___VOID__STRING);
+    NANOCLR_NATIVE_DECLARE(GetFileFromPathNative___STATIC__WindowsStorageStorageFile__STRING__STRING);
 
-	//--//
+    //--//
 
 };
 
@@ -111,5 +111,8 @@ struct Library_win_storage_native_Windows_Storage_StorageProvider
 };
 
 extern const CLR_RT_NativeAssemblyData g_CLR_AssemblyNative_Windows_Storage;
+
+
+#define WORKING_DRIVE_IS_INTERNAL_DRIVE         memcmp(workingDrive, INTERNAL_DRIVE_LETTER, sizeof(INTERNAL_DRIVE_LETTER) - 1) == 0
 
 #endif  //_WIN_STORAGE_NATIVE_H_

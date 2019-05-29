@@ -5,6 +5,8 @@
 //
 
 #include <targetSimpleLinkCC32xx_Sntp.h>
+#include <targetSimpleLinkCC32xx_Threads.h>
+#include <targetSimpleLinkCC32xx_ProvisioningTask.h>
 
 // POSIX Header files
 #include <pthread.h>
@@ -18,6 +20,8 @@
 #include <ti/drivers/net/wifi/slnetifwifi.h>
 #include <ti/net/slnetsock.h>
 
+// nanoFramework header files
+#include <targetHAL.h>
 
 static struct sntp_server SNTP_ServersList[NTP_SERVERS];
 
@@ -33,9 +37,9 @@ void sntp_init(void)
     if(sntpWorkingThread == NULL)
     {
         pthread_attr_init(&threadAttributes);
-        priorityParams.sched_priority = 1;
+        priorityParams.sched_priority = NF_TASK_PRIORITY;
         retc = pthread_attr_setschedparam(&threadAttributes, &priorityParams);
-        retc |= pthread_attr_setstacksize(&threadAttributes, 2048);
+        retc |= pthread_attr_setstacksize(&threadAttributes, 1024);
         if (retc != 0)
         {
             // failed to set attributes
@@ -47,6 +51,8 @@ void sntp_init(void)
         {
             // pthread_create() failed
             HAL_AssertEx();
+            UART_PRINT("Unable to create SNTP thread \n");
+
             while(1)
             {
                 ;
@@ -324,15 +330,54 @@ void* SntpWorkingThread(void* argument)
     timeval.tv_sec = NTP_REPLY_WAIT_TIME;
     timeval.tv_usec = 0;
 
+    UART_PRINT("[SNTP task] started\n\r");
+
+    // delay 1st request, if configured
+    if(SNTP_STARTUP_DELAY > 0)
+    {
+        UART_PRINT("[SNTP task] start delay: %d\n\r", SNTP_STARTUP_DELAY);
+
+        ClockP_sleep(SNTP_STARTUP_DELAY);
+    }
+
     while(1)
     {
+        // need to be connected and have an IP
+        if(!IS_IP_ACQUIRED(nF_ControlBlock.Status))
+        {
+            UART_PRINT("[SNTP task] not connected. Retrying in %d seconds.\n\r", SNTP_RETRY_TIMEOUT);
+
+            clock_gettime(CLOCK_REALTIME, &tspec);
+            tspec.tv_sec += SNTP_RETRY_TIMEOUT;
+
+            // wait for connection event with retry timeout
+            // don't bother checking if it exited on timeout or event
+            // because the loop is restarted and the check for connection & address is performed
+            sem_timedwait(&Provisioning_ControlBlock.connectionAsyncEvent, &tspec);
+
+            // retrying: start over
+            continue;
+        }
+
+        UART_PRINT("[SNTP task] getting time...\n\r");
+
         // Get the time use the SNTP_ServersList
         retval = SNTP_getTime(&timeval, &ntpTimeStamp);
 
         if (retval != 0)
         {
-            // sleep before retrying
-            sleep(SNTP_RETRY_TIMEOUT);
+            UART_PRINT("[SNTP task] failed to get time. Error: %d\n\r", retval);
+
+            clock_gettime(CLOCK_REALTIME, &tspec);
+            tspec.tv_sec += SNTP_RETRY_TIMEOUT;
+
+            // wait for connection event with retry timeout
+            // don't bother checking if it exited on timeout or event
+            // because the loop is restarted and the check for connection & address is performed
+            sem_timedwait(&Provisioning_ControlBlock.connectionAsyncEvent, &tspec);
+
+            // retrying: start over
+            continue;
         }
 
         currentTime = ntpTimeStamp >> 32;
@@ -341,14 +386,21 @@ void* SntpWorkingThread(void* argument)
         tspec.tv_nsec = 0;
         tspec.tv_sec = currentTime;
 
+        UART_PRINT("[SNTP task] updated time: %d\n\r", currentTime);
+
         if (clock_settime(CLOCK_REALTIME, &tspec) != 0)
         {
             // failed to set current time
             // don't do anything, just wait for the next attempt
         }
 
-        // sleep until next update time
-        sleep(SNTP_UPDATE_DELAY);
+        // wait for connection event with retry timeout
+        // don't bother checking if it exited on timeout or event
+        // because the loop is restarted and the check for connection & address is performed
+        clock_gettime(CLOCK_REALTIME, &tspec);
+        tspec.tv_sec += SNTP_UPDATE_DELAY;
+
+        sem_timedwait(&Provisioning_ControlBlock.connectionAsyncEvent, &tspec);
     }
 
     pthread_exit(0);

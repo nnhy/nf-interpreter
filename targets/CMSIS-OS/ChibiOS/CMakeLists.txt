@@ -3,21 +3,20 @@
 # See LICENSE file in the project root for full license information.
 #
 
+include(STM32_CubePackage)
+
 ########################################################
 # check availability of hex2dfu tool if specified
-# only relevant if this is running on a Windows machine
-if(WIN32)
-    if(NOT "${TOOL_HEX2DFU_PREFIX}" STREQUAL "")
-        if(NOT EXISTS ${TOOL_HEX2DFU_PREFIX}/hex2dfu.exe)
-            message(STATUS "")
-            message(STATUS "Couldn't find the hex2dfu tool at the specified path: ${TOOL_HEX2DFU_PREFIX}/hex2dfu.exe")
-            message(STATUS "Make sure that the CMake option TOOL_HEX2DFU_PREFIX has the correct path.")
-            message(STATUS "If you don't have this tool download it from https://github.com/nanoframework/nf-tools/releases")
-            message(STATUS "")
-            message(FATAL_ERROR "hex2dfu tool not found")
-        else()
-            set(HEX2DFU_TOOL_AVAILABLE TRUE CACHE INTERNAL "hex2dfu tool available")
-        endif()
+if(NOT "${TOOL_HEX2DFU_PREFIX}" STREQUAL "")
+    if(NOT EXISTS ${TOOL_HEX2DFU_PREFIX}/hex2dfu.exe)
+        message(STATUS "")
+        message(STATUS "Couldn't find the hex2dfu tool at the specified path: ${TOOL_HEX2DFU_PREFIX}/hex2dfu.exe")
+        message(STATUS "Make sure that the CMake option TOOL_HEX2DFU_PREFIX has the correct path.")
+        message(STATUS "If you don't have this tool download it from https://github.com/nanoframework/nf-tools/releases")
+        message(STATUS "")
+        message(FATAL_ERROR "hex2dfu tool not found")
+    else()
+        set(HEX2DFU_TOOL_AVAILABLE TRUE CACHE INTERNAL "hex2dfu tool available")
     endif()
 endif()
 
@@ -53,38 +52,12 @@ if(NO_CHIBIOS_SOURCE)
 
     #  check if Git was found, if not report to user and abort
     if(NOT GIT_EXECUTABLE)
-    message(FATAL_ERROR "error: could not find Git, make sure you have it installed.")
+        message(FATAL_ERROR "error: could not find Git, make sure you have it installed.")
     endif()
 
     # ChibiOS version
-    set(CHIBIOS_VERSION_EMPTY TRUE)
-
-    # check if build was requested with a specifc ChibiOS version
-    if(DEFINED CHIBIOS_VERSION)
-        if(NOT "${CHIBIOS_VERSION}" STREQUAL "")
-            set(CHIBIOS_VERSION_EMPTY FALSE)
-        endif()
-    endif()
-
-    if(CHIBIOS_VERSION_EMPTY)
-        # no ChibiOS version actualy specified, must be empty which is fine, we'll grab the code from the stable_18.2.x branch
-        message(STATUS "RTOS is: CHIBIOS (latest available code from stable_19.1.x)")
-        set(CHIBIOS_GIT_TAG "stable_19.1.x")
-    else()
-        message(STATUS "RTOS is: ChibiRTOS v${CHIBIOS_VERSION}")
-
-        # branch naming follows the pattern 'stable_18.2.x'
-        # need to extract the major and minor numbers from the CHIBIOS_VERSION parameter
-        # find 1st dot in version number
-        string(FIND ${CHIBIOS_VERSION} "." CHIBIOS_VERSION_DOT_INDEX)
-        # find 2nd dot in version number
-        string(FIND ${CHIBIOS_VERSION} "." CHIBIOS_VERSION_DOT_INDEX REVERSE)
-        # extract 'short' version
-        string(SUBSTRING ${CHIBIOS_VERSION} 0 ${CHIBIOS_VERSION_DOT_INDEX} CHIBIOS_SHORT_VERSION)
-
-        # set branch name
-        set(CHIBIOS_GIT_TAG "stable_${CHIBIOS_SHORT_VERSION}.x")
-    endif()
+    set(CHIBIOS_GIT_TAG "stable_19.1.x")
+    message(STATUS "RTOS is: CHIBIOS (latest available code from ${CHIBIOS_GIT_TAG})")
 
     # need to setup a separate CMake project to download the code from the GitHub repository
     # otherwise it won't be available before the actual build step
@@ -177,7 +150,7 @@ if(CHIBIOS_CONTRIB_REQUIRED)
 
         #  check if Git was found, if not report to user and abort
         if(NOT GIT_EXECUTABLE)
-        message(FATAL_ERROR "error: could not find Git, make sure you have it installed.")
+            message(FATAL_ERROR "error: could not find Git, make sure you have it installed.")
         endif()
 
         message(STATUS "ChibiOS-Contrib source from GitHub repo")
@@ -435,37 +408,121 @@ else()
 
 endif()
 
+# (default is OFF so STM Cube package is NOT included)
+option(STM32_CUBE_PACKAGE_REQUIRED "option to include STM Cube pcakge in the build")
+if(STM32_CUBE_PACKAGE_REQUIRED)
+    ProcessSTM32CubePackage()
+endif()
+
+# if support for SPIFFS is enabled add it to the build
+if(NF_FEATURE_USE_SPIFFS)
+
+    # SPIFFS needs STM Cube package option
+    if(NOT STM32_CUBE_PACKAGE_REQUIRED)
+        message(FATAL_ERROR "error: SPIFFS requires STM Cube package option, make sure you have STM32_CUBE_PACKAGE_REQUIRED build option set to ON.")
+    endif()
+
+    # check if SPIFFS_SOURCE was specified or if it's empty (default is empty)
+    set(NO_SPIFFS_SOURCE TRUE)
+
+    if(SPIFFS_SOURCE)
+        if(NOT "${SPIFFS_SOURCE}" STREQUAL "")
+            set(NO_SPIFFS_SOURCE FALSE)
+        endif()
+    endif()
+
+    if(NO_SPIFFS_SOURCE)
+        # no SPIFFS source specified, download it from it's repo
+
+        # hack to make the FindGit to work in Windows platforms (check the module comment for details)
+        include(Hack_SetGitSearchPath)
+
+        # check for Git (needed here for advanced warning to user if it's not installed)
+        find_package(Git)
+
+        #  check if Git was found, if not report to user and abort
+        if(NOT GIT_EXECUTABLE)
+            message(FATAL_ERROR "error: could not find Git, make sure you have it installed.")
+        endif()
+
+        # need to setup a separate CMake project to download the code from the GitHub repository
+        # otherwise it won't be available before the actual build step
+        configure_file("CMake/SPIFFS.CMakeLists.cmake.in"
+                    "${CMAKE_BINARY_DIR}/SPIFFS_Download/CMakeLists.txt")
+
+        # setup CMake project for SPIFFS download
+        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                        RESULT_VARIABLE result
+                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/SPIFFS_Download")
+
+        # run build on SPIFFS download CMake project to perform the download
+        execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                        RESULT_VARIABLE result
+                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/SPIFFS_Download")
+
+        # add SPIFFS as external project
+        ExternalProject_Add(
+            SPIFFS
+            PREFIX SPIFFS
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/SPIFFS_Source
+            GIT_REPOSITORY  https://github.com/nanoframework/spiffs
+            GIT_SHALLOW 1   # download only the tip of the branch, not the complete history
+            TIMEOUT 10
+            LOG_DOWNLOAD 1
+
+            # Disable all other steps
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ""
+        )
+
+    else()
+        # SPIFFS source was specified
+
+        # sanity check is source path exists
+        if(EXISTS "${SPIFFS_SOURCE}/")
+
+            # check if we already have the sources, no need to copy again
+            if(NOT EXISTS "${CMAKE_BINARY_DIR}/SPIFFS_Source")
+                message(STATUS "SPIFFS source from: ${SPIFFS_SOURCE}")
+                file(COPY "${SPIFFS_SOURCE}/" DESTINATION "${CMAKE_BINARY_DIR}/SPIFFS_Source")
+            else()
+                message(STATUS "Using local cache of SPIFFS source from ${SPIFFS_SOURCE}")
+            endif()
+
+            set(SPIFFS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/SPIFFS_Source/include)
+        else()
+            message(FATAL_ERROR "Couldn't find SPIFFS source at ${SPIFFS_SOURCE}/")
+        endif()
+
+        # add SPIFFS as external project
+        ExternalProject_Add(
+            SPIFFS
+            PREFIX SPIFFS
+            SOURCE_DIR ${CMAKE_BINARY_DIR}/SPIFFS_Source
+
+            # Disable all other steps
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ""
+        )
+
+    endif()
+
+    # get source dir for SPIFFS CMake project
+    ExternalProject_Get_Property(SPIFFS SOURCE_DIR)
+
+    set(SPIFFS_LIBRARIES "${CMAKE_SHARED_LIBRARY_PREFIX}SPIFFS${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    include_directories(${SPIFFS_INCLUDE_DIRS})
+
+    add_subdirectory(spiffs)
+
+endif()
+
 # add target ChibiOS dirs
 add_subdirectory(Include)
 add_subdirectory(common)
 add_subdirectory(nanoBooter)
 add_subdirectory(nanoCLR)
 
-# now add the subdirectory for the board
-# try to find board in the targets folder
-if(EXISTS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/ChibiOS/${CHIBIOS_BOARD})
-    # board found
-    message(STATUS "Support for target board '${CHIBIOS_BOARD}' found")
-    message(STATUS "${CHIBIOS_BOARD_DEFINITIONS_LOCATION}")
-
-    # add TARGET board directory
-    add_subdirectory("${CHIBIOS_BOARD}")
-
-else()
-
-    # try to find board in the Community targets folder
-    if(EXISTS ${PROJECT_SOURCE_DIR}/targets-community/CMSIS-OS/ChibiOS/${CHIBIOS_BOARD})
-        # board found
-        message(STATUS "Support for target board '${CHIBIOS_BOARD}' found in Community targets")
-        message(STATUS "${CHIBIOS_BOARD_DEFINITIONS_LOCATION}")
-
-        # add TARGET board directory from Community
-        add_subdirectory("targets-community/CMSIS-OS/ChibiOS/${CHIBIOS_BOARD}")
-
-    else()
-    # board NOT found in targets folder
-        # board NOT found in targets folder
-        message(FATAL_ERROR "\n\nSorry but support for ${CHIBIOS_BOARD} target is not available...\n\You can wait for that to be added or you might want to contribute and start working on a PR for that.\n\n")
-    endif()
-
-endif()
+# board folder will be added in main CMakeList

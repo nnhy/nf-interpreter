@@ -11,9 +11,9 @@
 #include <WireProtocol_Message.h>
 #include <WireProtocol_HAL_interface.h>
 
-WP_Message inboundMessage;
+UART_Handle uart = NULL;
 
-bool WP_Initialise(COM_HANDLE port);
+WP_Message inboundMessage;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,40 +25,8 @@ bool WP_Initialise(COM_HANDLE port);
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-UART_Handle uart = NULL;
-UART_Params uartParams;
-
-bool WP_Initialise(COM_HANDLE port)
-{
-    (void)port;
-
-    // Create a UART with data processing off
-    UART_Params_init(&uartParams);
-    uartParams.readTimeout = 500;
-    uartParams.writeDataMode = UART_DATA_BINARY;
-    uartParams.readDataMode = UART_DATA_BINARY;
-    uartParams.readReturnMode = UART_RETURN_FULL;
-    uartParams.readEcho = UART_ECHO_OFF;
-    uartParams.baudRate = 115200;
-
-    uart = UART_open(Board_UART0, &uartParams);
-
-    if (uart == NULL)
-    {
-        // UART_open() failed
-        while (1);
-    }
- 
-    return true;
-}
-
 int WP_ReceiveBytes(uint8_t* ptr, uint16_t* size)
 {
-    if(uart == NULL)
-    {
-        WP_Initialise(NULL);
-    }
-
     // save for latter comparison
     uint16_t requestedSize = *size;
 
@@ -74,7 +42,7 @@ int WP_ReceiveBytes(uint8_t* ptr, uint16_t* size)
         // if the requested number of bytes was actually read
         //////////////////////////////////////////////////////////
         
-        // non blocking read from serial port with 100ms timeout
+        // non blocking read from serial port with 500ms timeout
         size_t read = UART_read(uart, ptr, requestedSize);
 
         ptr  += read;
@@ -91,11 +59,6 @@ int WP_TransmitMessage(WP_Message* message)
 {
     uint32_t writeResult;
     bool operationResult = false;
-
-    if(uart == NULL)
-    {
-        WP_Initialise(NULL);
-    }
 
     ///////////////////////////////////////////////////////////
     //              PORTING CHANGE REQUIRED HERE             //

@@ -58,6 +58,12 @@ if(NF_SECURITY_MBEDTLS)
     find_package(mbedTLS REQUIRED)
 endif()
 
+# SPIFFS
+if(NF_FEATURE_USE_SPIFFS)
+    find_package(STM32F7_CubePackage REQUIRED)
+    find_package(SPIFFS REQUIRED)
+endif()
+
 # nF feature: UI Graphics
 if(NF_FEATURE_UI_GRAPHICS)
     find_package(NF_UI_Graphics REQUIRED)
@@ -125,7 +131,7 @@ add_executable(
     ${CHIBIOS_SOURCES}
     ${CHIBIOS_CONTRIB_SOURCES}
     ${ChibiOSnfOverlay_SOURCES}
-
+    ${STM32F7_CubePackage_SOURCES}
     ${WireProtocol_SOURCES}
 
     # sources for nanoFramework libraries
@@ -140,6 +146,9 @@ add_executable(
     "${CHIBIOS_LWIP_SOURCES}"
     "${NF_Networking_SOURCES}"
     "${mbedTLS_SOURCES}"
+
+    # sources for SPIFFS
+    "${SPIFFS_SOURCES}"
 
     # sources for nanoFramework APIs
     "${TARGET_NANO_APIS_SOURCES}"
@@ -188,6 +197,7 @@ include_directories(
     ${CHIBIOS_INCLUDE_DIRS}
     ${ChibiOSnfOverlay_INCLUDE_DIRS}
     ${CHIBIOS_CONTRIB_INCLUDE_DIRS}
+    ${STM32F7_CubePackage_INCLUDE_DIRS}
 
     ${TARGET_CMSIS_COMMON_INCLUDE_DIRS}
     ${TARGET_CHIBIOS_COMMON_INCLUDE_DIRS}
@@ -230,6 +240,9 @@ target_include_directories(${NANOCLR_PROJECT_NAME}.elf PUBLIC
     # incudes for Networking and TLS
     "${NF_Networking_INCLUDE_DIRS}"
     "${mbedTLS_INCLUDE_DIRS}"
+
+    # includes for SPIFFS
+    "${SPIFFS_INCLUDE_DIRS}"
 
     # incudes for UI graphics
     "${NF_UI_Graphics_INCLUDE_DIRS}"

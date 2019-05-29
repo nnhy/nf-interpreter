@@ -9,13 +9,13 @@
 #include <target_board.h>
 #include <Board.h>
 #include <gpio.h>
+#include <ti/drivers/dpl/ClockP.h>
 
-#define GLOBAL_LOCK(x)              portENTER_CRITICAL();
-#define GLOBAL_UNLOCK(x)            portEXIT_CRITICAL();
-#define ASSERT_IRQ_MUST_BE_OFF()   // TODO need to determine if this needs implementation
+#define GLOBAL_LOCK()              vPortEnterCritical();
+#define GLOBAL_UNLOCK()            vPortExitCritical();
 
 // platform dependent delay
-#define PLATFORM_DELAY(milliSecs)   vTaskDelay(milliSecs);
+#define PLATFORM_DELAY(milliSecs)   ClockP_usleep(milliSecs * 1000);
 
 // Definitions for Sockets/Network
 #define GLOBAL_LOCK_SOCKETS(x)   
@@ -49,6 +49,30 @@
 // #define DEBUG_HARD_BREAKPOINT()
 
 #endif  // !defined(BUILD_RTM)
+
+// map TI SimpleLink calls to UART output to nanoFramework API
+// this is valid only for debug buils
+// release and RTM build don't call these
+#if defined(BUILD_RTM)
+
+#define UART_PRINT(x,...)
+#define INFO_PRINT(x,...)
+
+#else
+
+#if defined(DEBUG) || defined(_DEBUG)
+
+#define UART_PRINT      DebuggerPort_WriteProxy
+#define INFO_PRINT      DebuggerPort_WriteProxy
+
+#else
+
+#define UART_PRINT(x,...)
+#define INFO_PRINT(x,...)
+
+#endif // DEBUG
+
+#endif // defined(BUILD_RTM)
 
 #define NANOCLR_STOP() HARD_BREAKPOINT()
 

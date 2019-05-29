@@ -3,27 +3,51 @@
 // See LICENSE file in the project root for full license information.
 //
 
-#include "nanoCLR_Types.h"
-#include "nanoCLR_Runtime.h"
+#include <nanoCLR_Types.h>
+#include <nanoCLR_Runtime.h>
+#include <ti/drivers/UART.h>
+#include <ti/drivers/dpl/SemaphoreP.h>
+
+extern UART_Handle uart;
+extern SemaphoreP_Handle uartMutex;
+
+// developer note:
+// Outputing to board UART can be done only if there is no debugger attached, because it uses the same UART.
+
+extern "C" uint32_t DebuggerPort_WriteProxy(const char *format, ...)
+{
+    va_list arg;
+    uint32_t chars = 0;
+
+    if( CLR_EE_DBG_IS_NOT( Enabled ) )
+    {
+        if(SemaphoreP_pend(uartMutex, UART_WAIT_FOREVER) == SemaphoreP_OK)
+        {
+            va_start( arg, format );
+
+            chars = CLR_Debug::PrintfV( format, arg );
+
+            va_end( arg );
+
+            SemaphoreP_post(uartMutex);
+        }
+    }
+
+    return chars;
+}
 
 uint32_t GenericPort_Write( int portNum, const char* data, size_t size )
 {
     (void)portNum;
-    if (g_CLR_RT_ExecutionEngine.m_iDebugger_Conditions == CLR_RT_ExecutionEngine::c_fDebugger_StateProgramRunning)
-    {
-        char* p = (char*)data;
-        int counter = 0;
 
-        // send characters directly to the trace port
-        while(*p != '\0' || counter < (int)size)
-        {
-            // ets_printf( "%c", *p++); 
-            counter++;
-        }
-        return counter;
-    }
-    else
+    if( CLR_EE_DBG_IS_NOT( Enabled ) )
     {
-        return (uint32_t)size;
+        // debugger port is NOT in use, OK to output to UART
+        // send characters directly to the UART port
+        UART_write(uart, data, size);
+
+        return size;
     }
+
+    return (uint32_t)size;
 }
