@@ -9,14 +9,6 @@ INCLUDE(CMakeForceCompiler)
 #     return()
 # endif()
 
-# check for toolchain path
-if(NOT TOOLCHAIN_PREFIX)
-     message(STATUS "\n-- ########################################\nNo TOOLCHAIN_PREFIX specified, need one!\nCall CMake with -DTOOLCHAIN_PREFIX=\"<path_to_your_gcc_toolchain>\"\n specifing the path to your GCC toolchain (ex: E:/GNU_Tools_ARM_Embedded/5_4_2016q3)")
-     message(STATUS "\nNOTE: mind the forward slash in the path, without trailing slash.)")
-     message(STATUS "########################################\n\n")
-     message(FATAL_ERROR "No TOOLCHAIN_PREFIX specified")
-endif()
-
 # set toolchain directories
 set(TOOLCHAIN_BIN_DIR ${TOOLCHAIN_PREFIX}/bin)
 set(TOOLCHAIN_INC_DIR ${TOOLCHAIN_PREFIX}/arm-none-eabi/include)
