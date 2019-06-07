@@ -175,30 +175,48 @@ endif()
 set(MBEDOSRTOS_SRCS
     # drivers
     AnalogIn.cpp
+    AnalogOut.cpp
     BusIn.cpp
     BusInOut.cpp
     BusOut.cpp
     CAN.cpp
+    #DigitalIn.cpp
+    #DigitalInOut.cpp
+    #DigitalOut..cpp
     Ethernet.cpp
-    FileBase.cpp
-    FileLike.cpp
-    FilePath.cpp
-    FileSystemLike.cpp
+    #FlashIAP.cpp
+    FileBase.cpp #?
+    FileLike.cpp #?
+    FilePath.cpp #?
+    FileSystemLike.cpp #?
     I2C.cpp
     I2CSlave.cpp
     InterruptIn.cpp
     InterruptManager.cpp
-    LocalFileSystem.cpp
+    LocalFileSystem.cpp #?
+    #LowPowerTicker.cpp
+    #LowPowerTimeout.cpp
+    #LowPowerTimer.cpp
+    #MbedCRC.cpp
+    #PortIn.cpp
+    #PortInOut.cpp
+    #PortOut.cpp
+    #PwmOut.cpp
+    #QSPI.cpp
     RawSerial.cpp
     SPI.cpp
     SPISlave.cpp
     Serial.cpp
     SerialBase.cpp
-    Stream.cpp
+    Stream.cpp #?
+    #SerialWireOutput.cpp
+    #TableCRC.cpp
     Ticker.cpp
     Timeout.cpp
     Timer.cpp
     TimerEvent.cpp
+    #UARTSerial.cpp
+    
 
     # events
     EventQueue.cpp
