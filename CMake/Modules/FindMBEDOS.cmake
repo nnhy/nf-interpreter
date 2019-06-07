@@ -3,405 +3,396 @@
 # See LICENSE file in the project root for full license information.
 #
 
-include(JSONParser)
+message(STATUS "Compiling for mbed")
 
-# read mbedOS targets file
-file(READ "${PROJECT_BINARY_DIR}/mbedOS_Source/targets/targets.json" TARGETS_JSON)
+if(${TOOLCHAIN} STREQUAL "")
+    message(FATAL_ERROR "A toolchain (eg: TOOLCHAIN_GCC_ARM) must be specified")
+endif()
 
-# try to find target
-string(FIND ${TARGETS_JSON} ${MBEDOS_TARGET} FOUND_TARGET)
+if("${MBED_TARGET}" STREQUAL "")
+    message(FATAL_ERROR "MBED_TARGET must be specified")
+endif()
 
- message(STATUS "${MBEDOS_TARGET} @ ${FOUND_TARGET}")
+if("${MBED_PATH}" STREQUAL "")
+    message(FATAL_ERROR "MBED_PATH must be specified")
+endif()
 
-if(${FOUND_TARGET} GREATER -1)
-    # target found
-    
-    message(STATUS "mbedOS target '${MBEDOS_TARGET}' found")
-    # get substring with data
-    math(EXPR FOUND_TARGET "${FOUND_TARGET} - 1")
-    
-    # because there is not an elegant way of finding the end of the json section of this target we are setting this to 1000 chars
-    # the downside is that for most target this overuns to the next target
-    string(SUBSTRING "${TARGETS_JSON}" ${FOUND_TARGET} 2000 TARGET_TENTATIVE_JSON)
+macro(glob_files var dir)
+    foreach(ext ${ARGN})
+        file(GLOB _tmp "${dir}/${ext}")
+        set(${var} ${${var}} ${_tmp})
+    endforeach()
+endmacro()
+
+if (${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
+    set(MBED_COMPILER_FAMILY "GCC")
+elseif (${CMAKE_C_COMPILER_ID} STREQUAL "ARMCC")
+    set(MBED_COMPILER_FAMILY "ARM")
 else()
-    message(FATAL_ERROR "\n\nSorry but ${MBEDOS_TARGET} seems to be missing in the list of the mbedOS supported targets...\n\n")
+    # TODO: Maybe we should crash here.
+    set(MBED_COMPILER_FAMILY "ARM")
 endif()
 
-# parse target data
-sbeParseJson(MBEDOS_TARGET_DATA TARGET_TENTATIVE_JSON)
 
-# try to extract relevant data 
-foreach(var ${MBEDOS_TARGET_DATA})
+# Board specific configuration
+# -----------------------------
+# To add another board, look at the values in the ${MBED_PATH}/targets/targets.json
+# file. This along with the directory structure in the targets folder should
+# be enough to fill you in on the needed information.
 
-    # sanity check when json parse has overun to the next target
-    string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}" MBEDOS_TARGET_NAME_FOUND)
-    if(MBEDOS_TARGET_NAME_FOUND GREATER -1)
-        
-        # seems to belong to target, extract data
-        #message("${var} : ${${var}}") # debug helper
+if (MBED_TARGET MATCHES "NUCLEO_F767ZI")
+    set(MBED_VENDOR "STM")
+    set(MBED_FAMILY "STM32F7")
+    set(MBED_CPU    "STM32F767xI")
+    set(MBED_CPU_FAMILY "CORTEX_M")
+    set(MBED_CORE   "cortex-m7")
+    set(MBED_INSTRUCTIONSET "M7")
+    set(MBED_STARTUP "startup_stm32f769xx.o")
+    set(MBED_SYSTEM "system_stm32f7xx.o")
+    set(MBED_LINK_TARGET "STM32F767xI")
 
-        # core 
-        string(FIND ${var} "core" MBEDOS_TARGET_CORE_INDEX)
-        if(${MBEDOS_TARGET_CORE_INDEX} GREATER -1)
-            set(MBEDOS_TARGET_CORE ${${var}})
-        endif()
+    set(MBED_SUPPORTED_LIBS
+        "USB" "RPC" "DSP")
 
-        # extra labels 0 is: target vendor
-        string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}.extra_labels_0" MBEDOS_TARGET_VENDOR_INDEX)
-        if(${MBEDOS_TARGET_VENDOR_INDEX} GREATER -1)
-            set(MBEDOS_TARGET_VENDOR ${${var}})
-        endif()
+    # values found in ${MBED_PATH}/targets/targets.json
+    set(MBED_DEVICE_FEATURES
+        "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
+        "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
+        "PWNOUT" "RTC" "SERIAL" "SERIAL_ASYNCH" "SLEEP" "SPI"
+        "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES" "TRNG")
 
-        # extra labels 1 is: target series/variant
-        string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}.extra_labels_1" MBEDOS_TARGET_SERIES_INDEX)
-        if(${MBEDOS_TARGET_SERIES_INDEX} GREATER -1)
-            set(MBEDOS_TARGET_SERIES ${${var}})
-        endif()
-        
-        # extra labels 2 is used for compiler defs
-        string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}.extra_labels_2" MBEDOS_TARGET_EXTRA_LABEL2_INDEX)
-        if(${MBEDOS_TARGET_EXTRA_LABEL2_INDEX} GREATER -1)
-            set(MBEDOS_TARGET_EXTRA_LABEL2 ${${var}})
-        endif()
+    set(MBED_PREPROCESSOR_OPTS
+        "TARGET_${MBED_FAMILY}"
+        "TARGET_LIKE_CORTEX_M7"
+        "TARGET_FF_ARDUINO"
+        "__CORTEX_M7"
+        "__FPU_PRESENT=1" "__CMSIS_RTOS"
+        "ARM_MATH_CM7"
+        "STM32_D11_SPI_ETHERNET_PIN=PA_7"
+        "TRANSACTION_QUEUE_SIZE=2"
+        "TRANSACTION_QUEUE_SIZE_SPI=2"
+        "USBHOST_OTHER"
+        "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
+        "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
+        "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
+        "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
+    )
 
-        # 'macros' lists target aditional macros
-        string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}.macros_" MBEDOS_TARGET_MACROS_INDEX)
-        if(${MBEDOS_TARGET_MACROS_INDEX} GREATER -1)
-            list(APPEND MBEDOS_TARGET_MACROS ${${var}})
-        endif()
+elseif(MBED_TARGET MATCHES "NUCLEO_F303K8")
+    set(MBED_VENDOR "STM")
+    set(MBED_FAMILY "STM32F3")
+    set(MBED_CPU    "STM32F303x8")
+    set(MBED_CPU_FAMILY "CORTEX_M")
+    set(MBED_CORE   "cortex-m4")
+    set(MBED_INSTRUCTIONSET "M4")
+    set(MBED_STARTUP "startup_stm32f303x8.o")
+    set(MBED_SYSTEM "system_stm32f3xx.o")
+    set(MBED_LINK_TARGET "STM32F303x8")
 
-        # 'device has' lists target features
-        string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}.device_has_" MBEDOS_TARGET_DEVICE_HAS_INDEX)
-        if(${MBEDOS_TARGET_DEVICE_HAS_INDEX} GREATER -1)
-            list(APPEND MBEDOS_TARGET_FEATURES ${${var}})
-        endif()
+    set(MBED_SUPPORTED_LIBS
+        "RPC" "DSP")
 
-        # 'supported form factors' lists supported form factors for board
-        string(FIND ${var} "MBEDOS_TARGET_DATA.${MBEDOS_TARGET}.supported_form_factors_" MBEDOS_TARGET_DEVICE_FORM_FACTORS_INDEX)
-        if(${MBEDOS_TARGET_DEVICE_FORM_FACTORS_INDEX} GREATER -1)
-            list(APPEND MBEDOS_TARGET_DEVICE_FORM_FACTORS ${${var}})
-        endif()
+    # values found in ${MBED_PATH}/targets/targets.json
+    set(MBED_DEVICE_FEATURES
+        "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
+        "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
+        "PWNOUT" "RTC" "SERIAL" "SERIAL_FC" "SLEEP"
+        "SPI" "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES"
+    )
 
-    endif()
-    
-endforeach()
+    set(MBED_PREPROCESSOR_OPTS
+        "TARGET_${MBED_FAMILY}"
+        "TARGET_LIKE_CORTEX_M4"
+        "TARGET_FF_ARDUINO"
+        "__CORTEX_M4"
+        "__FPU_PRESENT=1" "__CMSIS_RTOS"
+        "ARM_MATH_CM4"
+        "TRANSACTION_QUEUE_SIZE=2"
+        "TRANSACTION_QUEUE_SIZE_SPI=2"
+        "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
+        "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
+        "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
+        "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
+    )
 
-message("mbedOS target has ${MBEDOS_TARGET_CORE}")
-message("mbedOS target vendor is ${MBEDOS_TARGET_VENDOR}")
-message("mbedOS target series is ${MBEDOS_TARGET_SERIES}")
-#message("mbedOS target features: ${MBEDOS_TARGET_FEATURES}")
+elseif(MBED_TARGET MATCHES "DISCO_F769NI")
+    set(MBED_VENDOR "STM")
+    set(MBED_FAMILY "STM32F7")
+    set(MBED_CPU    "STM32F7xx")
+    set(MBED_CPU_FAMILY "CORTEX_M")
+    set(MBED_CORE   "cortex-m4")
+    set(MBED_INSTRUCTIONSET "M4")
+    set(MBED_STARTUP "startup_stm32f7xx.o")
+    set(MBED_SYSTEM "system_stm32f7xx.o")
+    set(MBED_LINK_TARGET "STM32F7xx")
 
-# get target core short name
-string(REPLACE "Cortex-" "" MBEDOS_TARGET_CORE_SHORT ${MBEDOS_TARGET_CORE} )
+    set(MBED_SUPPORTED_LIBS
+        "RPC" "DSP")
 
-# set compiler options (general)
-string(APPEND MBEDOS_COMPILE_OPTIONS "-D__CORTEX_${MBEDOS_TARGET_CORE_SHORT} -D__MBEDOS__=1 -DTARGET_LIKE_MBEDOS -D__MBEDOS_CMSIS_RTOS_CM -DTOOLCHAIN_object -D__CMSIS_RTOS -DTOOLCHAIN_GCC -DTARGET_CORTEX_M -DARM_MATH_C${MBEDOS_TARGET_CORE_SHORT} -DTARGET_${MBEDOS_TARGET_CORE_SHORT} -DTOOLCHAIN_GCC_ARM -DTARGET_RELEASE -DTARGET_LIKE_CORTEX_${MBEDOS_TARGET_CORE_SHORT} -D__CORTEX_${MBEDOS_TARGET_CORE_SHORT} -DTARGET_${MBEDOS_TARGET_VENDOR} -DTARGET_${MBEDOS_TARGET_SERIES} -DTARGET_UVISOR_UNSUPPORTED -DTARGET_${MBEDOS_TARGET}")
+    # values found in ${MBED_PATH}/targets/targets.json
+    set(MBED_DEVICE_FEATURES
+        "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
+        "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
+        "PWNOUT" "RTC" "SERIAL" "SERIAL_FC" "SLEEP"
+        "SPI" "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES"
+    )
 
-# extra compiler def from extra label 2
-if(MBEDOS_TARGET_EXTRA_LABEL2)
-    string(APPEND MBEDOS_COMPILE_OPTIONS " -DTARGET_${MBEDOS_TARGET_EXTRA_LABEL2}")
+    set(MBED_PREPROCESSOR_OPTS
+        "TARGET_${MBED_FAMILY}"
+        "TARGET_LIKE_CORTEX_M4"
+        "TARGET_FF_ARDUINO"
+        "__CORTEX_M4"
+        "__FPU_PRESENT=1" "__CMSIS_RTOS"
+        "ARM_MATH_CM4"
+        "TRANSACTION_QUEUE_SIZE=2"
+        "TRANSACTION_QUEUE_SIZE_SPI=2"
+        "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
+        "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
+        "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
+        "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
+    )
+
+else ()
+    message(FATAL_ERROR "This cmake file only supports DISCO_F769NI, NUCLEO_F767ZI and NUCLEO_F303K8 for the time being.")
 endif()
 
-# set compiler options (target specific features)
-foreach(feature ${MBEDOS_TARGET_FEATURES})
-    string(APPEND MBEDOS_COMPILE_OPTIONS " -DDEVICE_${feature}=1")
+foreach(feature ${MBED_DEVICE_FEATURES})
+    set(MBED_DEFINES "${MBED_DEFINES} -DDEVICE_${feature}=1")
 endforeach()
 
-# set compiler options (form factors)
-foreach(ff ${MBEDOS_TARGET_DEVICE_FORM_FACTORS})
-    string(APPEND MBEDOS_COMPILE_OPTIONS " -DTARGET_FF_${ff}")
+foreach(opt ${MBED_PREPROCESSOR_OPTS})
+    set(MBED_DEFINES "${MBED_DEFINES} -D${opt}")
 endforeach()
 
-# set compiler options (macros)
-foreach(macro ${MBEDOS_TARGET_MACROS})
-    string(APPEND MBEDOS_COMPILE_OPTIONS " -D${macro}")
-endforeach()
+message(STATUS "Building for ${MBED_TARGET}")
 
-#message(">>MBEDOS_COMPILE_OPTIONS: ${MBEDOS_COMPILE_OPTIONS}<<") # debug helper
+# -----------------------------------
+# Finish setting up toolchain
 
-# set include directories for mbedOS RTOS
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/cmsis)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/cmsis/TOOLCHAIN_GCC)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/docs)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/drivers)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/events)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/events/equeue)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/greentea-client)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/greentea-client/greentea-client)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/greentea-client/source)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/unity)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/unity/source)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/unity/unity)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/utest)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/utest/source)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/utest/utest)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/importer)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/inc)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/inc/mbedtls)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/platform)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/platform/inc)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/platform/src)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/src)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/nanostack)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/netsocket)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/features/storage)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/hal)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/hal/storage_abstraction)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/platform)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos/rtx)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos/rtx/TARGET_CORTEX_M)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos/rtx/TARGET_CORTEX_M/TARGET_${MBEDOS_TARGET_CORE_SHORT})
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos/rtx/TARGET_CORTEX_M/TARGET_${MBEDOS_TARGET_CORE_SHORT}/TOOLCHAIN_GCC)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets/TARGET_${MBEDOS_TARGET_VENDOR})
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets/TARGET_${MBEDOS_TARGET_VENDOR}/TARGET_${MBEDOS_TARGET_SERIES})
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets/TARGET_${MBEDOS_TARGET_VENDOR}/TARGET_${MBEDOS_TARGET_SERIES}/device)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets/TARGET_${MBEDOS_TARGET_VENDOR}/TARGET_${MBEDOS_TARGET_SERIES}/TARGET_${MBEDOS_TARGET})
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets/TARGET_${MBEDOS_TARGET_VENDOR}/TARGET_${MBEDOS_TARGET_SERIES}/TARGET_${MBEDOS_TARGET}/device)
-list(APPEND MBEDOS_INCLUDE_DIRS ${PROJECT_BINARY_DIR}/mbedOS_Source/targets/TARGET_${MBEDOS_TARGET_VENDOR}/TARGET_${MBEDOS_TARGET_SERIES}/TARGET_${MBEDOS_TARGET}/device/TOOLCHAIN_GCC_ARM)
-
-# source files and GCC options according to target vendor and series
-if("${MBED_TARGET_VENDOR}" STREQUAL "STM")
-    include(MBEDOS_${MBEDOS_TARGET_SERIES}_sources)
-    include(MBEDOS_${MBEDOS_TARGET_SERIES}_GCC_options)
-endif()
-
-# source files for RTOS
-set(MBEDOSRTOS_SRCS
-    # drivers
-    AnalogIn.cpp
-    AnalogOut.cpp
-    BusIn.cpp
-    BusInOut.cpp
-    BusOut.cpp
-    CAN.cpp
-    #DigitalIn.cpp
-    #DigitalInOut.cpp
-    #DigitalOut..cpp
-    Ethernet.cpp
-    #FlashIAP.cpp
-    FileBase.cpp #?
-    FileLike.cpp #?
-    FilePath.cpp #?
-    FileSystemLike.cpp #?
-    I2C.cpp
-    I2CSlave.cpp
-    InterruptIn.cpp
-    InterruptManager.cpp
-    LocalFileSystem.cpp #?
-    #LowPowerTicker.cpp
-    #LowPowerTimeout.cpp
-    #LowPowerTimer.cpp
-    #MbedCRC.cpp
-    #PortIn.cpp
-    #PortInOut.cpp
-    #PortOut.cpp
-    #PwmOut.cpp
-    #QSPI.cpp
-    RawSerial.cpp
-    SPI.cpp
-    SPISlave.cpp
-    Serial.cpp
-    SerialBase.cpp
-    Stream.cpp #?
-    #SerialWireOutput.cpp
-    #TableCRC.cpp
-    Ticker.cpp
-    Timeout.cpp
-    Timer.cpp
-    TimerEvent.cpp
-    #UARTSerial.cpp
-    
-
-    # events
-    EventQueue.cpp
-    equeue.c
-    equeue_mbed.cpp
-    equeue_posix.c
-
-    # features
-    greentea_metrics.cpp
-    greentea_serial.cpp
-    test_env.cpp
-    unity.c
-    mbed-utest-shim.cpp
-    unity_handler.cpp
-    utest_case.cpp
-    utest_default_handlers.cpp
-    utest_greentea_handlers.cpp
-    utest_harness.cpp
-    utest_shim.cpp
-    utest_stack_trace.cpp
-    utest_types.cpp
-    
-    # mbed tls
-    mbed_trng.c
-    aes.c
-    aesni.c
-    arc4.c
-    asn1parse.c
-    asn1write.c
-    base64.c
-    bignum.c
-    blowfish.c
-    camellia.c
-    ccm.c
-    certs.c
-    cipher.c
-    cipher_wrap.c
-    cmac.c
-    ctr_drbg.c
-    debug.c
-    des.c
-    dhm.c
-    ecdh.c
-    ecdsa.c
-    ecjpake.c
-    ecp.c
-    ecp_curves.c
-    entropy.c
-    entropy_poll.c
-    error.c
-    gcm.c
-    havege.c
-    hmac_drbg.c
-    md.c
-    md2.c
-    md4.c
-    md5.c
-    md_wrap.c
-    memory_buffer_alloc.c
-    net_sockets.c
-    oid.c
-    padlock.c
-    pem.c
-    pk.c
-    pk_wrap.c
-    pkcs11.c
-    pkcs12.c
-    pkcs5.c
-    pkparse.c
-    pkwrite.c
-    platform.c
-    ripemd160.c
-    rsa.c
-    sha1.c
-    sha256.c
-    sha512.c
-    ssl_cache.c
-    ssl_ciphersuites.c
-    ssl_cli.c
-    ssl_cookie.c
-    ssl_srv.c
-    ssl_ticket.c
-    ssl_tls.c
-    threading.c
-    timing.c
-    version.c
-    version_features.c
-    x509.c
-    x509_create.c
-    x509_crl.c
-    x509_crt.c
-    x509_csr.c
-    x509write_crt.c
-    x509write_csr.c
-    xtea.c
-
-    # net socket
-    NetworkInterface.cpp
-    NetworkStack.cpp
-    Socket.cpp
-    SocketAddress.cpp
-    TCPServer.cpp
-    TCPSocket.cpp
-    UDPSocket.cpp
-    WiFiAccessPoint.cpp
-    nsapi_dns.cpp
-
-    # mBed HAL
-    mbed_gpio.c
-    mbed_lp_ticker_api.c
-    mbed_pinmap_common.c
-    mbed_ticker_api.c
-    mbed_us_ticker_api.c
-
-    # mBed platfom
-    CallChain.cpp
-    mbed_alloc_wrappers.cpp
-    mbed_assert.c
-    mbed_board.c
-    mbed_critical.c
-    mbed_error.c
-    mbed_interface.c
-    mbed_mem_trace.c
-    mbed_rtc_time.cpp
-    mbed_semihost_api.c
-    mbed_stats.c
-    mbed_wait_api_no_rtos.c
-    mbed_wait_api_rtos.cpp
-    retarget.cpp
-    
-    # RTOS
-    Mutex.cpp
-    RtosTimer.cpp
-    Semaphore.cpp
-    Thread.cpp
-    rtos_idle.c
-    HAL_CM.c
-    RTX_Conf_CM.c
-    rt_CMSIS.c
-    rt_Event.c
-    rt_List.c
-    rt_Mailbox.c
-    rt_MemBox.c
-    rt_Memory.c
-    rt_Mutex.c
-    rt_OsEventObserver.c
-    rt_Robin.c
-    rt_Semaphore.c
-    rt_System.c
-    rt_Task.c
-    rt_Time.c
-    rt_Timer.c
+set(MBED_COMMON_FLAGS
+    -Wall
+    -Wextra
+    -mthumb
+    -Wno-unused-parameter
+    -Wno-missing-field-initializers
+    -MMD
+    -fmessage-length=0               # error messages on single line
+    -fno-exceptions                  #
+    -fno-common                      # place tentative definitions in the data section
+    -fno-builtin                     #
+    -ffunction-sections              # allows more aggressive optimizations
+    -fdata-sections                  # allows more aggressive optimizations
+    -funsigned-char                  # force all chars to be compiled unsigned
+    -fno-delete-null-pointer-checks  # force compiler to assume we can't access memory address 0. enables some optimizations
+    -fomit-frame-pointer             # aggressively look to omit frame pointers
+    -mtune=${MBED_CORE}
+    -mcpu=${MBED_CORE}
+    -DTARGET_${MBED_TARGET}
+    -DTARGET_${MBED_INSTRUCTIONSET}
+    -DTARGET_${MBED_VENDOR}
+    -DTOOLCHAIN_GCC_ARM              # TODO: Support other toolchains
+    -DTOOLCHAIN_GCC
+    ${MBED_DEFINES}
 )
 
-foreach(SRC_FILE ${MBEDOSRTOS_SRCS})
-    set(MBEDOS_SRC_FILE SRC_FILE-NOTFOUND)
-    find_file(MBEDOS_SRC_FILE ${SRC_FILE}
-        PATHS 
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/drivers
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/events
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/events/equeue
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/greentea-client/source
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/unity/source
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/utest
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/frameworks/utest/source
-            
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/platform/src
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/mbedtls/src
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/features/netsocket
+set(MBED_COMMON_FLAGS_RELEASE ${MBED_COMMON_FLAGS}
+    "-Os"
+    "-DNDEBUG"
+)
 
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/hal
+set(MBED_COMMON_FLAGS_DEBUG ${MBED_COMMON_FLAGS}
+    "-O0"
+    "-g3"
+    "-DMBED_DEBUG"
+    "-DMBED_TRAP_ERRORS_ENABLED=1"
+)
 
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/platform
+set(MBED_COMMON_LINKER_FLAGS
+    "-Wl,--no-wchar-size-warning"
+    "-Wl,--gc-sections"               # eliminate unused sections and symbols from output
+    "-Wl,--wrap,main"
+    "-Wl,--wrap,malloc_r"
+    "-Wl,--wrap,free_r"
+    "-Wl,--wrap,realloc_r"
+    "-Wl,--wrap,memalign_r"
+    "-Wl,--wrap,calloc_r"
+    "-Wl,--wrap,exit"
+    "-Wl,--wrap,atexit"
+    "-Wl,-n"
+    "-T${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/device/${TOOLCHAIN}/${MBED_LINK_TARGET}.ld"
+    "-static"
+    "--specs=${MBED_STD_LIB}"
+)
 
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos 
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos/rtx 
-            ${PROJECT_BINARY_DIR}/mbedOS_Source/rtos/rtx/TARGET_CORTEX_M 
+if(${MBED_FLOAT_PRINTF})
+    set(MBED_COMMON_LINKER_FLAGS ${MBED_COMMON_LINKER_FLAGS} "-Wl,-u -Wl,_printf_float")
+endif()
 
-        CMAKE_FIND_ROOT_PATH_BOTH
+if(${MBED_FLOAT_SCANF})
+    set(MBED_COMMON_LINKER_FLAGS ${MBED_COMMON_LINKER_FLAGS} "-Wl,-u -Wl,_scanf_float")
+endif()
+
+set(MBED_LIBS stdc++ supc++ m gcc g c nosys rdimon)
+
+string(REPLACE ";" " " MBED_COMMON_FLAGS_STR "${MBED_COMMON_FLAGS}")
+string(REPLACE ";" " " MBED_COMMON_FLAGS_REL_STR "${MBED_COMMON_FLAGS_RELEASE}")
+string(REPLACE ";" " " MBED_COMMON_FLAGS_DBG_STR "${MBED_COMMON_FLAGS_DEBUG}")
+string(REPLACE ";" " " MBED_COMMON_LINKER_STR "${MBED_COMMON_LINKER_FLAGS}")
+
+set(CMAKE_C_FLAGS "${MBED_COMMON_FLAGS_STR} -std=gnu99")
+set(CMAKE_CXX_FLAGS "${MBED_COMMON_FLAGS_STR} -fno-rtti")
+set(CMAKE_CXX_FLAGS_RELEASE "${MBED_COMMON_FLAGS_REL_STR} -fno-rtti")
+set(CMAKE_CXX_FLAGS_MINSIZEREL "${MBED_COMMON_FLAGS_REL_STR} -fno-rtti")
+set(CMAKE_CXX_FLAGS_DEBUG "${MBED_COMMON_FLAGS_DBG_STR} -fno-rtti")
+set(CMAKE_EXE_LINKER_FLAGS ${MBED_COMMON_LINKER_STR})
+
+
+# Set of directories where we will pull source files and headers from.
+# We build up this list and eventually glob all of its contents.
+
+# NOTE: The order of these directories matters. Some source files define
+# symbols with weak references that will not get overridden at link time
+# if they are not in the correct order. If you ever run into a problem
+# where something like an interrupt handler isn't being called as you
+# would expect, try looking at libmbed-os
+
+set(MBED_SOURCE_DIRS
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/TARGET_${MBED_TARGET}"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/device/${TOOLCHAIN}"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/device/"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/device"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}"
+    "${MBED_PATH}"
+    "${MBED_PATH}/platform"
+    "${MBED_PATH}/hal"
+    "${MBED_PATH}/cmsis"
+    "${MBED_PATH}/cmsis/TARGET_${MBED_CPU_FAMILY}"
+    "${MBED_PATH}/cmsis/TARGET_${MBED_CPU_FAMILY}/TOOLCHAIN_${MBED_COMPILER_FAMILY}"
+    "${MBED_PATH}/drivers"
+
+)
+
+if("USB" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_USB})
+    message(STATUS "Using USB Library")
+    set(MBED_SOURCE_DIRS ${MBED_SOURCE_DIRS}
+        "${MBED_PATH}/features/unsupported/USBDevice/USBAudio"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBDevice"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBDevice/TARGET_${MBED_VENDOR}"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBDevice/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/TARGET_${MBED_TARGET}"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBHID"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBMIDI"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBMSD"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBSerial"
     )
-    # message("${SRC_FILE} >> ${MBEDOS_SRC_FILE}") # debug helper
-    list(APPEND MBEDOS_SOURCES ${MBEDOS_SRC_FILE})
+elseif(${MBED_USE_USB})
+    message(WARNING "USB Library is not supported for ${MBED_TARGET}")
+endif()
+
+if("DSP" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_DSP})
+    message(STATUS "Using DSP Library")
+    set(MBED_SOURCE_DIRS ${MBED_SOURCE_DIRS}
+        "${MBED_PATH}/features/unsupported/dsp/dsp"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/BasicMathFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/CommonTables"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/ComplexMathFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/ControllerFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/FastMathFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/FilteringFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/MatrixFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/StatisticsFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/SupportFunctions"
+        "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/TransformFunctions"
+    )
+elseif (${MBED_USE_DSP})
+    message(WARNING "DSP Library is not supported for ${MBED_TARGET}")
+endif()
+
+if ("RPC" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_RPC})
+    message(STATUS "Using RPC Library")
+    set(MBED_SOURCE_DIRS ${MBED_SOURCE_DIRS}
+        "${MBED_PATH}/features/unsupported/rpc"
+    )
+elseif(${MBED_USE_RPC})
+    message(WARN "RPC library not supported for ${MBED_TARGET}")
+endif()
+
+if ("LOCALFILESYSTEM" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_FILESYSTEM})
+    message(STATUS "Using LocalFileSystem Library")
+    set(MBED_SOURCE_DIRS ${MBED_SOURCE_DIRS}
+        "${MBED_PATH}/features/filesystem/"
+        "${MBED_PATH}/features/filesystem/bd"
+        "${MBED_PATH}/features/filesystem/fat"
+        "${MBED_PATH}/features/filesystem/fat/ChaN"
+    )
+elseif (${MBED_USE_FILESYSTEM})
+    message(WARNING "Selected device: ${MBED_TARGET} does not support the local file system library")
+endif()
+
+# build list of source files and header files
+foreach(dir ${MBED_SOURCE_DIRS})
+    glob_files(MBED_SOURCE_FILES ${dir} "*.cpp" "*.c" "*.S" "*.obj" "*.o")
+    glob_files(MBED_HEADER_FILES ${dir} "*.h")
 endforeach()
+
+
+# print debugging information
+if (${MBED_CMAKE_DEBUG})
+    message(STATUS "Source Files:")
+    foreach(src ${MBED_SOURCE_FILES})
+        message(STATUS "  ${src}")
+    endforeach()
+
+    message(STATUS "Header Files:")
+    foreach(src ${MBED_HEADER_FILES})
+        message(STATUS "  ${src}")
+    endforeach()
+
+    message(STATUS "Include Directories")
+    foreach(dir ${MBED_SOURCE_DIRS})
+      message(STATUS "  ${dir}")
+    endforeach()
+
+    message(STATUS "Libraries:")
+    message(STATUS "    ${MBED_LIBS}")
+
+    message(STATUS "Object Files:")
+    foreach(obj ${MBED_OBJECTS})
+      message(STATUS "  ${obj}")
+    endforeach()
+
+    message(STATUS "Command line preprocessor flags:")
+    foreach(opt ${MBED_DEFINES})
+        message(STATUS " ${opt}")
+    endforeach()
+endif()
+
+#add_library(mbed-os STATIC ${MBED_SOURCE_FILES} ${MBED_HEADER_FILES})
+#target_include_directories(mbed-os PUBLIC ${MBED_SOURCE_DIRS})
+
+# Helpful user end macro
+# mbed_executable(<name> [SOURCES ...] [INCLUDE_DIRS ...] [LIBS ...])
+#macro(mbed_executable name)
+#    set(options _OPTIONAL)
+#    set(oneValueArgs _ONEV)
+#    set(multiValueArgs SOURCES INCLUDE_DIRS LIBS)
+#    cmake_parse_arguments(MBED_EXECUTABLE  "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+#    add_executable(${name} ${MBED_EXECUTABLE_SOURCES})
+#    target_include_directories(${name} PRIVATE ${MBED_SOURCE_DIRS} ${MBED_EXECUTABLE_INCLUDE_DIRS})
+#    target_link_libraries(${name} mbed-os ${MBED_EXECUTABLE_LIBS} ${MBED_LIBS})
+#
+#    if (${MBED_MAKE_UPLOAD_TARGETS})
+#        # Upload to device
+#        add_custom_target(upload-${name}
+#            DEPENDS ${name}
+#            COMMAND ${CMAKE_OBJCOPY} -O binary ${name} ${name}.bin
+#            COMMAND cp ${name}.bin ${MBED_MOUNT}
+#        )
+#    endif()
+#endmacro()
 
 
 include(FindPackageHandleStandardArgs)
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(MBEDOS DEFAULT_MSG MBEDOS_INCLUDE_DIRS MBEDOS_SOURCES)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(MBEDOS DEFAULT_MSG MBED_SOURCE_DIRS MBED_SOURCE_FILES)
