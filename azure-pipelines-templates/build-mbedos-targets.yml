@@ -3,22 +3,26 @@
 
 parameters:
   buildDirectory: '$(Build.SourcesDirectory)\build'
-  mbedDirectory: '$(Build.SourcesDirectory)\targets\mbedOS'
-  nfSrcDirectory: '$(Build.SourcesDirectory)\src'
 
 steps:
-  - script: |
-      mkdir $(Build.SourcesDirectory)\build
+  - task: CMake@1
+    inputs:
+      cmakeArgs: '-G Ninja -DTOOLCHAIN_PREFIX=$(GNU_GCC_TOOLCHAIN_PATH) -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_VERSION=$(NBGV_Version) -DMBEDOS_TARGET=$(TargetName) $(BuildOptions) ..'
+      workingDirectory:  ${{ parameters.buildDirectory }}
+    displayName: Setup build with CMake
 
-      :: TODO - currently having problems adding multiple sources, so for the moment we will hack it
-      :: by just copying the source required into its own folder
+  # - script: |
+  #     mkdir $(Build.SourcesDirectory)\build
 
-      cd $(Build.SourcesDirectory)\targets\mbedOS      
-      mbed new .
-      mbed config --list
+  #     :: TODO - currently having problems adding multiple sources, so for the moment we will hack it
+  #     :: by just copying the source required into its own folder
+
+  #     cd $(Build.SourcesDirectory)\targets\mbedOS      
+  #     mbed new .
+  #     mbed config --list
       
-      echo todo - add macros e.g. -DUVISOR_PRESENT
-      echo todo - make target configurable
-      mbed compile -m DISCO_F769NI -t GCC_ARM -vv --source=. --source=$(Build.SourcesDirectory)\src --build $(Build.SourcesDirectory)\build --app-config=.\mbed_app.json --profile=.\profiles\test.json
+  #     echo todo - add macros e.g. -DUVISOR_PRESENT
+  #     echo todo - make target configurable
+  #     mbed compile -m DISCO_F769NI -t GCC_ARM -vv --source=. --source=$(Build.SourcesDirectory)\src --build $(Build.SourcesDirectory)\build --app-config=.\mbed_app.json --profile=.\profiles\test.json
 
-    displayName: 'build target using mbed-cli'
+  #   displayName: 'build target using mbed-cli'
