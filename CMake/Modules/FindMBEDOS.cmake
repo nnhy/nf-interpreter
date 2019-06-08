@@ -119,32 +119,31 @@ endif()
 if(MBEDOS_TARGET MATCHES "DISCO_F769NI")
     set(MBED_VENDOR "STM")
     set(MBED_FAMILY "STM32F7")
-    set(MBED_CPU    "STM32F7xx")
+    set(MBED_CPU    "STM32F769xI")
     set(MBED_CPU_FAMILY "CORTEX_M")
-    set(MBED_CORE   "cortex-m4")
-    set(MBED_INSTRUCTIONSET "M4")
+    set(MBED_CORE   "Cortex-M7FD")
+    set(MBED_INSTRUCTIONSET "M7")
     set(MBED_STARTUP "startup_stm32f7xx.o")
     set(MBED_SYSTEM "system_stm32f7xx.o")
-    set(MBED_LINK_TARGET "STM32F7xx")
+    set(MBED_LINK_TARGET "STM32F769xI")
 
     set(MBED_SUPPORTED_LIBS
         "RPC" "DSP")
 
     # values found in ${MBED_PATH}/targets/targets.json
     set(MBED_DEVICE_FEATURES
-        "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
-        "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
-        "PWNOUT" "RTC" "SERIAL" "SERIAL_FC" "SLEEP"
-        "SPI" "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES"
+        "ANALOGOUT" "CAN" "EMAC" "SERIAL_ASYNCH" "TRNG"
+        "FLASH" "USBDEVICE" "MPU" "QSPI"
     )
 
     set(MBED_PREPROCESSOR_OPTS
         "TARGET_${MBED_FAMILY}"
-        "TARGET_LIKE_CORTEX_M4"
+        "TARGET_LIKE_CORTEX_M7"
         "TARGET_FF_ARDUINO"
-        "__CORTEX_M4"
-        "__FPU_PRESENT=1" "__CMSIS_RTOS"
-        "ARM_MATH_CM4"
+        "__CORTEX_M7"
+        "__FPU_PRESENT=1" 
+        "__CMSIS_RTOS"
+        "ARM_MATH_CM7"
         "TRANSACTION_QUEUE_SIZE=2"
         "TRANSACTION_QUEUE_SIZE_SPI=2"
         "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
