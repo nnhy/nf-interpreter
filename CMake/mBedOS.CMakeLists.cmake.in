@@ -12,7 +12,7 @@ include(ExternalProject)
         GIT_REPOSITORY  https://github.com/ARMmbed/mbed-os
         GIT_TAG ${MBEDOS_GIT_TAG} # target specified branch
         GIT_SHALLOW 1   # download only the tip of the branch, not the complete history
-        TIMEOUT 10
+        TIMEOUT 60
         LOG_DOWNLOAD 1
         
         # Disable all other steps

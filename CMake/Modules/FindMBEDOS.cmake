@@ -9,8 +9,8 @@ if(${TOOLCHAIN} STREQUAL "")
     message(FATAL_ERROR "A toolchain (eg: TOOLCHAIN_GCC_ARM) must be specified")
 endif()
 
-if("${MBED_TARGET}" STREQUAL "")
-    message(FATAL_ERROR "MBED_TARGET must be specified")
+if("${MBEDOS_TARGET}" STREQUAL "")
+    message(FATAL_ERROR "MBEDOS_TARGET must be specified")
 endif()
 
 if("${MBED_PATH}" STREQUAL "")
@@ -40,82 +40,83 @@ endif()
 # file. This along with the directory structure in the targets folder should
 # be enough to fill you in on the needed information.
 
-if (MBED_TARGET MATCHES "NUCLEO_F767ZI")
-    set(MBED_VENDOR "STM")
-    set(MBED_FAMILY "STM32F7")
-    set(MBED_CPU    "STM32F767xI")
-    set(MBED_CPU_FAMILY "CORTEX_M")
-    set(MBED_CORE   "cortex-m7")
-    set(MBED_INSTRUCTIONSET "M7")
-    set(MBED_STARTUP "startup_stm32f769xx.o")
-    set(MBED_SYSTEM "system_stm32f7xx.o")
-    set(MBED_LINK_TARGET "STM32F767xI")
+# if (MBEDOS_TARGET MATCHES "NUCLEO_F767ZI")
+#     set(MBED_VENDOR "STM")
+#     set(MBED_FAMILY "STM32F7")
+#     set(MBED_CPU    "STM32F767xI")
+#     set(MBED_CPU_FAMILY "CORTEX_M")
+#     set(MBED_CORE   "cortex-m7")
+#     set(MBED_INSTRUCTIONSET "M7")
+#     set(MBED_STARTUP "startup_stm32f769xx.o")
+#     set(MBED_SYSTEM "system_stm32f7xx.o")
+#     set(MBED_LINK_TARGET "STM32F767xI")
 
-    set(MBED_SUPPORTED_LIBS
-        "USB" "RPC" "DSP")
+#     set(MBED_SUPPORTED_LIBS
+#         "USB" "RPC" "DSP")
 
-    # values found in ${MBED_PATH}/targets/targets.json
-    set(MBED_DEVICE_FEATURES
-        "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
-        "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
-        "PWNOUT" "RTC" "SERIAL" "SERIAL_ASYNCH" "SLEEP" "SPI"
-        "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES" "TRNG")
+#     # values found in ${MBED_PATH}/targets/targets.json
+#     set(MBED_DEVICE_FEATURES
+#         "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
+#         "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
+#         "PWNOUT" "RTC" "SERIAL" "SERIAL_ASYNCH" "SLEEP" "SPI"
+#         "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES" "TRNG")
 
-    set(MBED_PREPROCESSOR_OPTS
-        "TARGET_${MBED_FAMILY}"
-        "TARGET_LIKE_CORTEX_M7"
-        "TARGET_FF_ARDUINO"
-        "__CORTEX_M7"
-        "__FPU_PRESENT=1" "__CMSIS_RTOS"
-        "ARM_MATH_CM7"
-        "STM32_D11_SPI_ETHERNET_PIN=PA_7"
-        "TRANSACTION_QUEUE_SIZE=2"
-        "TRANSACTION_QUEUE_SIZE_SPI=2"
-        "USBHOST_OTHER"
-        "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
-        "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
-        "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
-        "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
-    )
+#     set(MBED_PREPROCESSOR_OPTS
+#         "TARGET_${MBED_FAMILY}"
+#         "TARGET_LIKE_CORTEX_M7"
+#         "TARGET_FF_ARDUINO"
+#         "__CORTEX_M7"
+#         "__FPU_PRESENT=1" "__CMSIS_RTOS"
+#         "ARM_MATH_CM7"
+#         "STM32_D11_SPI_ETHERNET_PIN=PA_7"
+#         "TRANSACTION_QUEUE_SIZE=2"
+#         "TRANSACTION_QUEUE_SIZE_SPI=2"
+#         "USBHOST_OTHER"
+#         "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
+#         "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
+#         "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
+#         "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
+#     )
 
-elseif(MBED_TARGET MATCHES "NUCLEO_F303K8")
-    set(MBED_VENDOR "STM")
-    set(MBED_FAMILY "STM32F3")
-    set(MBED_CPU    "STM32F303x8")
-    set(MBED_CPU_FAMILY "CORTEX_M")
-    set(MBED_CORE   "cortex-m4")
-    set(MBED_INSTRUCTIONSET "M4")
-    set(MBED_STARTUP "startup_stm32f303x8.o")
-    set(MBED_SYSTEM "system_stm32f3xx.o")
-    set(MBED_LINK_TARGET "STM32F303x8")
+# elseif(MBEDOS_TARGET MATCHES "NUCLEO_F303K8")
+#     set(MBED_VENDOR "STM")
+#     set(MBED_FAMILY "STM32F3")
+#     set(MBED_CPU    "STM32F303x8")
+#     set(MBED_CPU_FAMILY "CORTEX_M")
+#     set(MBED_CORE   "cortex-m4")
+#     set(MBED_INSTRUCTIONSET "M4")
+#     set(MBED_STARTUP "startup_stm32f303x8.o")
+#     set(MBED_SYSTEM "system_stm32f3xx.o")
+#     set(MBED_LINK_TARGET "STM32F303x8")
 
-    set(MBED_SUPPORTED_LIBS
-        "RPC" "DSP")
+#     set(MBED_SUPPORTED_LIBS
+#         "RPC" "DSP")
 
-    # values found in ${MBED_PATH}/targets/targets.json
-    set(MBED_DEVICE_FEATURES
-        "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
-        "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
-        "PWNOUT" "RTC" "SERIAL" "SERIAL_FC" "SLEEP"
-        "SPI" "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES"
-    )
+#     # values found in ${MBED_PATH}/targets/targets.json
+#     set(MBED_DEVICE_FEATURES
+#         "ANALOGIN" "ANALOGOUT" "CAN" "I2C" "I2CSLAVE" "I2C_ASYNCH"
+#         "INTERRUPTIN" "LOWPOWERTIMER" "PORTIN" "PORTINOUT" "PORTOUT"
+#         "PWNOUT" "RTC" "SERIAL" "SERIAL_FC" "SLEEP"
+#         "SPI" "SPISLAVE" "SPI_ASYNCH" "STDIO_MESASGES"
+#     )
 
-    set(MBED_PREPROCESSOR_OPTS
-        "TARGET_${MBED_FAMILY}"
-        "TARGET_LIKE_CORTEX_M4"
-        "TARGET_FF_ARDUINO"
-        "__CORTEX_M4"
-        "__FPU_PRESENT=1" "__CMSIS_RTOS"
-        "ARM_MATH_CM4"
-        "TRANSACTION_QUEUE_SIZE=2"
-        "TRANSACTION_QUEUE_SIZE_SPI=2"
-        "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
-        "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
-        "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
-        "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
-    )
+#     set(MBED_PREPROCESSOR_OPTS
+#         "TARGET_${MBED_FAMILY}"
+#         "TARGET_LIKE_CORTEX_M4"
+#         "TARGET_FF_ARDUINO"
+#         "__CORTEX_M4"
+#         "__FPU_PRESENT=1" "__CMSIS_RTOS"
+#         "ARM_MATH_CM4"
+#         "TRANSACTION_QUEUE_SIZE=2"
+#         "TRANSACTION_QUEUE_SIZE_SPI=2"
+#         "MBED_CONF_PLATFORM_STDIO_BAUD_RATE=9600"
+#         "MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=9600"
+#         "MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT=1"
+#         "MBED_CONF_PLATFORM_STIO_CONVERT_NEWLINES=0"
+#     )
 
-elseif(MBED_TARGET MATCHES "DISCO_F769NI")
+#else
+if(MBEDOS_TARGET MATCHES "DISCO_F769NI")
     set(MBED_VENDOR "STM")
     set(MBED_FAMILY "STM32F7")
     set(MBED_CPU    "STM32F7xx")
@@ -164,7 +165,7 @@ foreach(opt ${MBED_PREPROCESSOR_OPTS})
     set(MBED_DEFINES "${MBED_DEFINES} -D${opt}")
 endforeach()
 
-message(STATUS "Building for ${MBED_TARGET}")
+message(STATUS "Building for ${MBEDOS_TARGET}")
 
 # -----------------------------------
 # Finish setting up toolchain
@@ -187,7 +188,7 @@ set(MBED_COMMON_FLAGS
     -fomit-frame-pointer             # aggressively look to omit frame pointers
     -mtune=${MBED_CORE}
     -mcpu=${MBED_CORE}
-    -DTARGET_${MBED_TARGET}
+    -DTARGET_${MBEDOS_TARGET}
     -DTARGET_${MBED_INSTRUCTIONSET}
     -DTARGET_${MBED_VENDOR}
     -DTOOLCHAIN_GCC_ARM              # TODO: Support other toolchains
@@ -257,7 +258,7 @@ set(CMAKE_EXE_LINKER_FLAGS ${MBED_COMMON_LINKER_STR})
 # would expect, try looking at libmbed-os
 
 set(MBED_SOURCE_DIRS
-    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/TARGET_${MBED_TARGET}"
+    "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/TARGET_${MBEDOS_TARGET}"
     "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/device/${TOOLCHAIN}"
     "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/device/"
     "${MBED_PATH}/targets/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}"
@@ -280,14 +281,14 @@ if("USB" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_USB})
         "${MBED_PATH}/features/unsupported/USBDevice/USBAudio"
         "${MBED_PATH}/features/unsupported/USBDevice/USBDevice"
         "${MBED_PATH}/features/unsupported/USBDevice/USBDevice/TARGET_${MBED_VENDOR}"
-        "${MBED_PATH}/features/unsupported/USBDevice/USBDevice/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/TARGET_${MBED_TARGET}"
+        "${MBED_PATH}/features/unsupported/USBDevice/USBDevice/TARGET_${MBED_VENDOR}/TARGET_${MBED_FAMILY}/TARGET_${MBED_CPU}/TARGET_${MBEDOS_TARGET}"
         "${MBED_PATH}/features/unsupported/USBDevice/USBHID"
         "${MBED_PATH}/features/unsupported/USBDevice/USBMIDI"
         "${MBED_PATH}/features/unsupported/USBDevice/USBMSD"
         "${MBED_PATH}/features/unsupported/USBDevice/USBSerial"
     )
 elseif(${MBED_USE_USB})
-    message(WARNING "USB Library is not supported for ${MBED_TARGET}")
+    message(WARNING "USB Library is not supported for ${MBEDOS_TARGET}")
 endif()
 
 if("DSP" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_DSP})
@@ -307,7 +308,7 @@ if("DSP" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_DSP})
         "${MBED_PATH}/features/unsupported/dsp/cmsis_dsp/TransformFunctions"
     )
 elseif (${MBED_USE_DSP})
-    message(WARNING "DSP Library is not supported for ${MBED_TARGET}")
+    message(WARNING "DSP Library is not supported for ${MBEDOS_TARGET}")
 endif()
 
 if ("RPC" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_RPC})
@@ -316,7 +317,7 @@ if ("RPC" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_RPC})
         "${MBED_PATH}/features/unsupported/rpc"
     )
 elseif(${MBED_USE_RPC})
-    message(WARN "RPC library not supported for ${MBED_TARGET}")
+    message(WARN "RPC library not supported for ${MBEDOS_TARGET}")
 endif()
 
 if ("LOCALFILESYSTEM" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_FILESYSTEM})
@@ -328,7 +329,7 @@ if ("LOCALFILESYSTEM" IN_LIST MBED_SUPPORTED_LIBS AND ${MBED_USE_FILESYSTEM})
         "${MBED_PATH}/features/filesystem/fat/ChaN"
     )
 elseif (${MBED_USE_FILESYSTEM})
-    message(WARNING "Selected device: ${MBED_TARGET} does not support the local file system library")
+    message(WARNING "Selected device: ${MBEDOS_TARGET} does not support the local file system library")
 endif()
 
 # build list of source files and header files

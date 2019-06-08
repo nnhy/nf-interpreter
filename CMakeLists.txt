@@ -141,6 +141,13 @@ elseif(RTOS_TI_SIMPLELINK_CHECK)
     set(CMAKE_TOOLCHAIN_FILE CMake/toolchain.TI_SimpleLink.${TOOLCHAIN}.cmake)
 
 elseif(RTOS_MBEDOS_CHECK)
+    # check for toolchain path
+    if(NOT TOOLCHAIN_PREFIX)
+         message(STATUS "\n-- ########################################\nNo TOOLCHAIN_PREFIX specified, need one!\nCall CMake with -DTOOLCHAIN_PREFIX=\"<path_to_your_gcc_toolchain>\"\n specifing the path to your GCC toolchain (ex: E:/GNU_Tools_ARM_Embedded/5_4_2016q3)")
+         message(STATUS "\nNOTE: mind the forward slash in the path, without trailing slash.)")
+         message(STATUS "########################################\n\n")
+         message(FATAL_ERROR "No TOOLCHAIN_PREFIX specified")
+    endif()
     message(STATUS "\nSetting Toolchain file for mbedOS \n")
     set(CMAKE_TOOLCHAIN_FILE CMake/toolchain.mBedOS.${TOOLCHAIN}.cmake)
 
@@ -701,6 +708,6 @@ elseif(RTOS_TI_SIMPLELINK_CHECK)
 # MBEDOS
 elseif(RTOS_MBEDOS_CHECK)
 
-    add_subdirectory(targets/mbedOS)
+    add_subdirectory(targets/CMSIS-OS/mbedOS)
 
 endif()
