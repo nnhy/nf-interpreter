@@ -198,9 +198,9 @@ jobs:
 
   - template: azure-pipelines-templates/download-install-arm-gcc-toolchain.yml
 
-  - template: azure-pipelines-templates/download-install-mbed-cli.yml
+  #- template: azure-pipelines-templates/download-install-mbed-cli.yml
 
-  #- template: azure-pipelines-templates/download-install-ninja.yml
+  - template: azure-pipelines-templates/download-install-ninja.yml
 
   - template: azure-pipelines-templates/build-mbedos-targets.yml
 
