@@ -86,7 +86,7 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/mbedOS/${MBEDOS_TARGET})
             LOG_DOWNLOAD 1
 
             # Disable all other steps
-            #INSTALL_COMMAND ""
+            INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
             BUILD_COMMAND ""
         )
@@ -120,6 +120,7 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/mbedOS/${MBEDOS_TARGET})
             SOURCE_DIR ${CMAKE_BINARY_DIR}/mbedOS_Source
             
             # Disable all other steps
+            INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
             BUILD_COMMAND ""
         )
@@ -137,9 +138,9 @@ endif()
 # Define base path for the class libraries
 set(BASE_PATH_FOR_CLASS_LIBRARIES_MODULES "${PROJECT_SOURCE_DIR}/targets/CMSIS-OS/mbedOS/${MBEDOS_TARGET}/nanoCLR")
 
-# add target TI SimpleLink dirs
-#add_subdirectory(common)
-#add_subdirectory(Include)
-#add_subdirectory(nanoCLR)
+# add dirs
+add_subdirectory(common)
+add_subdirectory(Include)
+add_subdirectory(nanoCLR)
 
 
