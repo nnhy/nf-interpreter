@@ -92,10 +92,6 @@ bool ssl_generic_init_internal( int sslMode, int sslVerify, const char* certific
     // configure protocol
     switch((SslProtocols)sslMode)
     {
-        case SslProtocols_SSLv3:
-            securityMethod = SLNETSOCK_SEC_METHOD_SSLV3;
-            break;
-
         case SslProtocols_TLSv1:
             securityMethod = SLNETSOCK_SEC_METHOD_TLSV1;
             break;
@@ -316,7 +312,7 @@ int  ssl_write_internal( int sd, const char* data, size_t req_len)
 
     socketErrorCode = SlNetSock_send(sd, (const void*)data, req_len, 0);
 
-    // anything bellow 0 is considered an error, so we have to report that no bytes were sent
+    // anything below 0 is considered an error, so we have to report that no bytes were sent
     if (socketErrorCode < 0)
     {
         return 0;
